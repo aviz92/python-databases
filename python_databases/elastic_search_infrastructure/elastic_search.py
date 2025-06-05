@@ -1,48 +1,58 @@
-import logging
 import datetime
+import logging
 import time
-from enum import Enum
-from typing import Any, Optional
-import pandas as pd
+from abc import ABC, abstractmethod
 from copy import deepcopy
-from elasticsearch import helpers
-
-from python_databases.elastic_search_infrastructure.elastic_serach_connection import ElasticSearchOnPremConnection, \
-    ElasticSearchCloudConnection, UrlProtocol
-
-ELASTICSEARCH_CONNECTION_INSTANCES = {
-    "on_prem": ElasticSearchOnPremConnection,
-    "cloud": ElasticSearchCloudConnection
-}
-
-class ElasticSearchConnectionType(Enum):
-    ELASTICSEARCH_ON_PREM = "on_prem"
-    ELASTICSEARCH_CLOUD = "cloud"
+from enum import Enum
+from typing import Optional, Any
+import pandas as pd
+from elasticsearch import Elasticsearch, helpers
+from elasticsearch_dsl import connections
+from retrying import retry
 
 
-class ElasticSearch:
+class UrlProtocol(Enum):
+    HTTP = 'http'
+    HTTPS = 'https'
+
+
+class ElasticSearch(ABC):
     def __init__(
-            self,
-            elk_hostname: str,
-            elk_client_type: ElasticSearchConnectionType,
-            elk_port: Optional[int] = 9200,  # Default port for Elasticsearch
-            kibana_port: Optional[int] = 5601,  # Default port for Kibana
-            protocol: UrlProtocol = UrlProtocol.HTTPS,  # Default protocol
-            username: Optional[str] = None,  # Optional username
-            password: Optional[str] = None  # Optional password
+        self,
+        elk_hostname: str,
+        elasticsearch_port: Optional[int],
+        kibana_port: Optional[int],
+        protocol: UrlProtocol,
+        username: Optional[str],
+        password: Optional[str]
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
+        self._change_elasticsearch_logger()
 
-        self.elk_conn_ins = ELASTICSEARCH_CONNECTION_INSTANCES[elk_client_type.value](
-            elk_hostname=elk_hostname,
-            elasticsearch_port=elk_port,
-            kibana_port=kibana_port,
-            protocol=protocol,
-            username=username,
-            password=password
-        ).connect_to_elasticsearch()
-        self.elk_client = self.elk_conn_ins.connect_to_elasticsearch()
+        self.protocol = protocol
+        self.elk_hostname = elk_hostname
+        self.username = username
+        self.password = password
+
+        self.elasticsearch_port = elasticsearch_port
+        if not self.elasticsearch_port:
+            self.elasticsearch_url = f'{self.protocol.value}://{self.elk_hostname}'
+        else:
+            self.elasticsearch_url = f'{self.protocol.value}://{self.elk_hostname}:{self.elasticsearch_port}'
+        self.kibana_port = kibana_port
+
+        self.elk_client = None
         self.doc = {}
+
+    @abstractmethod
+    def _change_elasticsearch_logger(self):
+        tracer = logging.getLogger('elasticsearch')
+        tracer.setLevel(logging.CRITICAL)  # or desired level
+        # tracer.addHandler(logging.FileHandler('indexer.log'))
+
+    @abstractmethod
+    def connect_to_elasticsearch(self):
+        pass
 
     def fill_list_of_docs(  # noqa
         self,
@@ -161,3 +171,81 @@ class ElasticSearch:
         else:
             self.logger.info(f"The index '{index}' does not exist.")
             return False
+
+
+class ElasticSearchOnPrem(ElasticSearch):
+    def __init__(
+        self,
+        elk_hostname: str,
+        elasticsearch_port: Optional[int] = 9200,
+        kibana_port: Optional[int] = 5602,
+        protocol: UrlProtocol = UrlProtocol.HTTPS,
+        username: Optional[str] = None,
+        password: Optional[str] = None
+    ):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        super().__init__(
+            elk_hostname=elk_hostname,
+            elasticsearch_port=elasticsearch_port,
+            kibana_port=kibana_port,
+            protocol=protocol,
+            username=username,
+            password=password
+        )
+
+    def _change_elasticsearch_logger(self):
+        super()._change_elasticsearch_logger()
+
+    @retry(stop_max_attempt_number=3, wait_fixed=180000)
+    def connect_to_elasticsearch(self):
+        if self.username and self.password:
+            self.elk_client = connections.create_connection(
+                hosts=[self.elasticsearch_url],
+                http_auth=(self.username, self.password),
+                ca_certs="/etc/elasticsearch/certs/http_ca.crt",
+                verify_certs=False, timeout=60
+            )
+        else:
+            self.elk_client = connections.create_connection(hosts=[f'{self.elasticsearch_url}'], timeout=20)
+
+        if self.elk_client.ping():
+            self.logger.info("Elasticsearch on-prem Connection Successful")
+        else:
+            self.logger.error("Elasticsearch on-prem Connection Failed")
+            raise Exception(
+                f'Failed to connect to Elasticsearch on-prem on {self.elasticsearch_url}')  # sourcery skip: raise-specific-error
+
+
+class ElasticSearchCloud(ElasticSearch):
+    def __init__(
+        self,
+        elk_hostname: str,
+        elasticsearch_port: Optional[int] = 9200,
+        kibana_port: Optional[int] = 5602,
+        protocol: UrlProtocol = UrlProtocol.HTTPS,
+        username: Optional[str] = None,
+        password: Optional[str] = None
+    ):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        super().__init__(
+            elk_hostname=elk_hostname,
+            elasticsearch_port=elasticsearch_port,
+            kibana_port=kibana_port,
+            protocol=protocol,
+            username=username,
+            password=password
+        )
+
+    def _change_elasticsearch_logger(self):
+        super()._change_elasticsearch_logger()
+
+    @retry(stop_max_attempt_number=3, wait_fixed=180000)
+    def connect_to_elasticsearch(self):
+        self.elk_client = Elasticsearch(cloud_id=self.elk_hostname, http_auth=(self.username, self.password))
+
+        if self.elk_client.ping():
+            self.logger.info("Elasticsearch cloud Connection Successful")
+        else:
+            self.logger.error("Elasticsearch cloud Connection Failed")
+            raise Exception(
+                f'Failed to connect to Elasticsearch cloud on {self.elk_hostname}')  # sourcery skip: raise-specific-error
