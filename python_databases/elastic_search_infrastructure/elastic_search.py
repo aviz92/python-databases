@@ -172,6 +172,13 @@ class ElasticSearch(ABC):
             self.logger.info(f"The index '{index}' does not exist.")
             return False
 
+    def get_documents(self, index: str, query: dict) -> list[dict]:
+        try:
+            res = self.elk_client.search(index=index, body=query)["hits"]["hits"]
+            return [doc["_source"] for doc in res]
+        except Exception as e:
+            raise Exception(f"Failed to get documents from index '{index}': {str(e)}")
+
 
 class ElasticSearchOnPrem(ElasticSearch):
     def __init__(
