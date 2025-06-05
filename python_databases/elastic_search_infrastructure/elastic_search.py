@@ -192,6 +192,7 @@ class ElasticSearchOnPrem(ElasticSearch):
             username=username,
             password=password
         )
+        self.connect_to_elasticsearch()
 
     def _change_elasticsearch_logger(self):
         super()._change_elasticsearch_logger()
@@ -235,6 +236,8 @@ class ElasticSearchCloud(ElasticSearch):
             username=username,
             password=password
         )
+        self.connect_to_elasticsearch()
+
 
     def _change_elasticsearch_logger(self):
         super()._change_elasticsearch_logger()
