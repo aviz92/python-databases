@@ -1,5 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import Optional
+
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import connections
 from retrying import retry
@@ -14,11 +16,11 @@ class ElasticSearchConnection(ABC):
     def __init__(
         self,
         elk_hostname: str,
-        elasticsearch_port: int,
-        kibana_port: int,
+        elasticsearch_port: Optional[int],
+        kibana_port: Optional[int],
         protocol: UrlProtocol,
-        username: str,
-        password: str
+        username: Optional[str],
+        password: Optional[str]
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._change_elasticsearch_logger()
@@ -29,7 +31,10 @@ class ElasticSearchConnection(ABC):
         self.password = password
 
         self.elasticsearch_port = elasticsearch_port
-        self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}:{self.elasticsearch_port}'
+        if self.elasticsearch_port:
+            self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}'
+        else:
+            self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}:{self.elasticsearch_port}'
         self.kibana_port = kibana_port
 
         self.elk_client = None
@@ -51,11 +56,11 @@ class ElasticSearchOnPremConnection(ElasticSearchConnection):
     def __init__(
         self,
         elk_hostname: str,
-        elasticsearch_port: int = 9200,
-        kibana_port: int = 5602,
-        protocol: str = 'http',
-        username: str = None,
-        password: str = None
+        elasticsearch_port: Optional[int] = 9200,
+        kibana_port: Optional[int] = 5602,
+        protocol: UrlProtocol = UrlProtocol.HTTPS,
+        username: Optional[str] = None,
+        password: Optional[str] = None
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         super().__init__(
@@ -94,11 +99,11 @@ class ElasticSearchCloudConnection(ElasticSearchConnection):
     def __init__(
         self,
         elk_hostname: str,
-        elasticsearch_port: int = 9200,
-        kibana_port: int = 5602,
-        protocol: str = 'http',
-        username: str = None,
-        password: str = None
+        elasticsearch_port: Optional[int] = 9200,
+        kibana_port: Optional[int] = 5602,
+        protocol: UrlProtocol = UrlProtocol.HTTPS,
+        username: Optional[str] = None,
+        password: Optional[str] = None
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         super().__init__(

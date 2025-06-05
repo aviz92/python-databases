@@ -2,14 +2,13 @@ import logging
 import datetime
 import time
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 import pandas as pd
 from copy import deepcopy
 from elasticsearch import helpers
 
 from python_databases.elastic_search_infrastructure.elastic_serach_connection import ElasticSearchOnPremConnection, \
-    ElasticSearchCloudConnection
-
+    ElasticSearchCloudConnection, UrlProtocol
 
 ELASTICSEARCH_CONNECTION_INSTANCES = {
     "on_prem": ElasticSearchOnPremConnection,
@@ -26,11 +25,11 @@ class ElasticSearch:
             self,
             elk_hostname: str,
             elk_client_type: ElasticSearchConnectionType,
-            elk_port: int = 9200,  # Default port for Elasticsearch
-            kibana_port: int = 5601,  # Default port for Kibana
-            protocol: str = 'http',  # Default protocol
-            username: str = None,  # Optional username
-            password: str = None  # Optional password
+            elk_port: Optional[int] = 9200,  # Default port for Elasticsearch
+            kibana_port: Optional[int] = 5601,  # Default port for Kibana
+            protocol: UrlProtocol = UrlProtocol.HTTPS,  # Default protocol
+            username: Optional[str] = None,  # Optional username
+            password: Optional[str] = None  # Optional password
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
 
