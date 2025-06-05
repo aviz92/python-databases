@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Optional
 
 from elasticsearch import Elasticsearch
@@ -7,7 +8,7 @@ from elasticsearch_dsl import connections
 from retrying import retry
 
 
-class UrlProtocol(str):
+class UrlProtocol(Enum):
     HTTP = 'http'
     HTTPS = 'https'
 
@@ -31,7 +32,7 @@ class ElasticSearchConnection(ABC):
         self.password = password
 
         self.elasticsearch_port = elasticsearch_port
-        if self.elasticsearch_port:
+        if not self.elasticsearch_port:
             self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}'
         else:
             self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}:{self.elasticsearch_port}'
