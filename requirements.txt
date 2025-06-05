@@ -1,0 +1,9 @@
+setuptools
+wheel
+dotenv
+custom-python-logger
+retrying
+elasticsearch-dsl==7.4.0
+elasticsearch==7.17.0
+pandas
+psycopg2-binary
