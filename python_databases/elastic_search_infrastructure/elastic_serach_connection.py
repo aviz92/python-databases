@@ -33,9 +33,9 @@ class ElasticSearchConnection(ABC):
 
         self.elasticsearch_port = elasticsearch_port
         if not self.elasticsearch_port:
-            self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}'
+            self.elasticsearch_url = f'{self.protocol.value}://{self.elk_hostname}'
         else:
-            self.elasticsearch_url = f'{self.protocol}://{self.elk_hostname}:{self.elasticsearch_port}'
+            self.elasticsearch_url = f'{self.protocol.value}://{self.elk_hostname}:{self.elasticsearch_port}'
         self.kibana_port = kibana_port
 
         self.elk_client = None

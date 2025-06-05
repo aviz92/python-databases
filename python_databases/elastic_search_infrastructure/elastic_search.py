@@ -33,7 +33,7 @@ class ElasticSearch:
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        self.elk_client = ELASTICSEARCH_CONNECTION_INSTANCES[elk_client_type.value](
+        self.elk_conn_ins = ELASTICSEARCH_CONNECTION_INSTANCES[elk_client_type.value](
             elk_hostname=elk_hostname,
             elasticsearch_port=elk_port,
             kibana_port=kibana_port,
@@ -41,6 +41,7 @@ class ElasticSearch:
             username=username,
             password=password
         ).connect_to_elasticsearch()
+        self.elk_client = self.elk_conn_ins.connect_to_elasticsearch()
         self.doc = {}
 
     def fill_list_of_docs(  # noqa
