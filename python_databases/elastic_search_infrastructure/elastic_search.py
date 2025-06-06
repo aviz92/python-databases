@@ -87,7 +87,9 @@ class ElasticSearch(ABC):
                 self.logger.info('All documents were reported successfully')
             else:
                 self.logger.error(
-                    f'Not all documents were reported successfully.\n The documents that were not reported successfully: {failed_response}')
+                    f'Not all documents were reported successfully.\n'
+                    f'The documents that were not reported successfully: {failed_response}'
+                )
         self.logger.info('Finish to report the documents to ELK')
 
     def fill_elk_index_as_bulk_chunk(self, list_of_docs: list[dict], chunk_size=1000, time_sleep: int = 60) -> None:
@@ -190,7 +192,6 @@ class ElasticSearchOnPrem(ElasticSearch):
         username: Optional[str] = None,
         password: Optional[str] = None
     ):
-        self.logger = logging.getLogger(self.__class__.__name__)
         super().__init__(
             elk_hostname=elk_hostname,
             elasticsearch_port=elasticsearch_port,
@@ -199,6 +200,9 @@ class ElasticSearchOnPrem(ElasticSearch):
             username=username,
             password=password
         )
+
+        self.logger = logging.getLogger(self.__class__.__name__)
+
         self.connect_to_elasticsearch()
 
     def _change_elasticsearch_logger(self):
@@ -234,7 +238,6 @@ class ElasticSearchCloud(ElasticSearch):
         username: Optional[str] = None,
         password: Optional[str] = None
     ):
-        self.logger = logging.getLogger(self.__class__.__name__)
         super().__init__(
             elk_hostname=elk_hostname,
             elasticsearch_port=elasticsearch_port,
@@ -243,6 +246,9 @@ class ElasticSearchCloud(ElasticSearch):
             username=username,
             password=password
         )
+
+        self.logger = logging.getLogger(self.__class__.__name__)
+
         self.connect_to_elasticsearch()
 
 
