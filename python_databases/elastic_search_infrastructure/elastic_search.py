@@ -7,7 +7,6 @@ from enum import Enum
 from typing import Optional, Any
 import pandas as pd
 from elasticsearch import Elasticsearch, helpers
-from elasticsearch_dsl import connections
 from retrying import retry
 
 
@@ -44,7 +43,6 @@ class ElasticSearch(ABC):
         self.elk_client = None
         self.doc = {}
 
-    @abstractmethod
     def _change_elasticsearch_logger(self):
         tracer = logging.getLogger('elasticsearch')
         tracer.setLevel(logging.CRITICAL)  # or desired level
@@ -205,27 +203,24 @@ class ElasticSearchOnPrem(ElasticSearch):
 
         self.connect_to_elasticsearch()
 
-    def _change_elasticsearch_logger(self):
-        super()._change_elasticsearch_logger()
-
     @retry(stop_max_attempt_number=3, wait_fixed=180000)
     def connect_to_elasticsearch(self):
         if self.username and self.password:
-            self.elk_client = connections.create_connection(
+            self.elk_client = Elasticsearch(
                 hosts=[self.elasticsearch_url],
                 http_auth=(self.username, self.password),
-                ca_certs="/etc/elasticsearch/certs/http_ca.crt",
+                # ca_certs="/etc/elasticsearch/certs/http_ca.crt",
                 verify_certs=False, timeout=60
             )
         else:
-            self.elk_client = connections.create_connection(hosts=[f'{self.elasticsearch_url}'], timeout=20)
+            self.elk_client = Elasticsearch(hosts=[f'{self.elasticsearch_url}'], timeout=20)
 
         if self.elk_client.ping():
             self.logger.info("Elasticsearch on-prem Connection Successful")
         else:
             self.logger.error("Elasticsearch on-prem Connection Failed")
             raise Exception(
-                f'Failed to connect to Elasticsearch on-prem on {self.elasticsearch_url}')  # sourcery skip: raise-specific-error
+                f'Failed to connect to Elasticsearch on-prem on {self.elasticsearch_url}')
 
 
 class ElasticSearchCloud(ElasticSearch):
@@ -251,10 +246,6 @@ class ElasticSearchCloud(ElasticSearch):
 
         self.connect_to_elasticsearch()
 
-
-    def _change_elasticsearch_logger(self):
-        super()._change_elasticsearch_logger()
-
     @retry(stop_max_attempt_number=3, wait_fixed=180000)
     def connect_to_elasticsearch(self):
         self.elk_client = Elasticsearch(cloud_id=self.elk_hostname, http_auth=(self.username, self.password))
@@ -264,4 +255,4 @@ class ElasticSearchCloud(ElasticSearch):
         else:
             self.logger.error("Elasticsearch cloud Connection Failed")
             raise Exception(
-                f'Failed to connect to Elasticsearch cloud on {self.elk_hostname}')  # sourcery skip: raise-specific-error
+                f'Failed to connect to Elasticsearch cloud on {self.elk_hostname}')
