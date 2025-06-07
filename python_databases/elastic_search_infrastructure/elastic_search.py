@@ -188,7 +188,7 @@ class ElasticSearch(ABC):
             username: str = None,
             chunk_size=1000,
             time_sleep: int = 1
-    ) -> None:
+    ) -> None:  # use as the main function to send data to the elastic search
         list_of_docs = self._prepare_documents_for_bulk(
             data=data,
             doc_id=doc_id,
