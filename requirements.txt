@@ -3,7 +3,7 @@ wheel
 dotenv
 custom-python-logger
 retrying
-elasticsearch-dsl
-elasticsearch
+elasticsearch<9
 pandas
 psycopg2-binary
+pytest
