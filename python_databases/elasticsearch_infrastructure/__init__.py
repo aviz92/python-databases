@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from python_databases.elastic_search_infrastructure.elastic_search import (
+from python_databases.elasticsearch_infrastructure.elasticsearch import (
     UrlProtocol,
     ElasticSearch,
     ElasticSearchOnPrem,

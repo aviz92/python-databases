@@ -1,8 +1,8 @@
-import datetime
 import logging
 import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Any
 import pandas as pd
@@ -181,20 +181,21 @@ class ElasticSearch(ABC):
     def fill_elk_index_as_bulk(
             self,
             data: list[dict],
-            doc_id: str,
             doc_index_name: str,
-            timestamp: datetime,
-            date_and_time: str,
-            username: str = None,
+            doc_id: Optional[str] = None,
+            timestamp: datetime = None,
+            date_and_time: Optional[str] = None,
+            username: Optional[str] = None,
             chunk_size=1000,
             time_sleep: int = 1
     ) -> None:  # use as the main function to send data to the elastic search
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
         list_of_docs = self._prepare_documents_for_bulk(
             data=data,
-            doc_id=doc_id,
             doc_index_name=doc_index_name,
             timestamp=timestamp,
-            date_and_time=date_and_time,
+            doc_id=doc_id or timestamp.strftime('%Y_%m_%dT%H_%M_%S_%f'),
+            date_and_time=date_and_time or timestamp.isoformat(),
             username=username
         )
 
