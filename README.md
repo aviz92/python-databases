@@ -14,7 +14,7 @@ A flexible and extensible Python library that provides a unified interface for i
 
 ## Installation
 ```bash
-pip install python-0databases
+pip install python-databases
 ```
 
 ---
