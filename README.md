@@ -21,6 +21,9 @@ pip install python-0databases
 
 ## 📌 Roadmap
 
+* [x] Elasticsearch support
+  - [x] On-Premises deployments
+  - [x] Cloud deployments using `cloud_id`
 * [ ] PostgreSQL / SQLAlchemy support
 
 ---
