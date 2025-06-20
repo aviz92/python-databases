@@ -42,7 +42,7 @@ class PostgreSQL:
             self.create_connection()
         return self._cursor
 
-    @retry(stop_max_attempt_number=3, wait_fixed=180000)
+    # @retry(stop_max_attempt_number=3, wait_fixed=180000)
     def create_connection(self):
         self.logger.info(f"Create connection to {self.host}:{self.port}")
 
@@ -53,7 +53,7 @@ class PostgreSQL:
             user=self.username,
             password=self.password,
         )
-        self._cursor = self.client.cursor(cursor_factory=extras.DictCursor)
+        self._cursor = self._client.cursor(cursor_factory=extras.DictCursor)
 
     def execute_query(self, query: str, params: Optional[Union[tuple, dict[str, Any]]] = None) -> None:
         self.logger.debug(f"Fetch rows from DB by query {query} with params {params}")
