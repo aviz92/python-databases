@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_version = '0.1.1'
+package_version = '0.1.2'
 
 package_name = 'python-databases'
 package_description = 'A Python library for managing and interacting with multiple databases seamlessly.'
