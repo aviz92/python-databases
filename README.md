@@ -9,6 +9,8 @@ A flexible and extensible Python library that provides a unified interface for i
   - Elasticsearch
     - On-Premises deployments
     - Cloud deployments using `cloud_id`
+  - PostgreSQL
+    - Basic support with plans for SQLAlchemy integration
 
 ---
 
@@ -24,7 +26,8 @@ pip install python-databases
 * [x] Elasticsearch support
   - [x] On-Premises deployments
   - [x] Cloud deployments using `cloud_id`
-* [ ] PostgreSQL / SQLAlchemy support
+* [x] PostgreSQL
+  - [ ] SQLAlchemy support
 
 ---
 
