@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Any
 import pandas as pd
+from custom_python_logger import get_logger
 from elasticsearch import Elasticsearch, helpers
 from retrying import retry
 
@@ -25,7 +26,7 @@ class ElasticSearch(ABC):
             username: Optional[str],
             password: Optional[str]
     ):
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
         self._change_elasticsearch_logger()
 
         self.protocol = protocol
@@ -43,7 +44,7 @@ class ElasticSearch(ABC):
         self.elk_client = None
 
     def _change_elasticsearch_logger(self):
-        tracer = logging.getLogger('elasticsearch')
+        tracer = get_logger('elasticsearch')
         tracer.setLevel(logging.CRITICAL)  # or desired level
         # tracer.addHandler(logging.FileHandler('indexer.log'))
 
@@ -260,7 +261,7 @@ class ElasticSearchOnPrem(ElasticSearch):
             password=password
         )
 
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.connect_to_elasticsearch()
 
@@ -303,7 +304,7 @@ class ElasticSearchCloud(ElasticSearch):
             password=password
         )
 
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.connect_to_elasticsearch()
 

@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Optional, Union, Any
 import psycopg2
+from custom_python_logger import get_logger
 from psycopg2 import extras
 from retrying import retry
 
@@ -15,7 +16,7 @@ class PostgreSQL:
         username: Optional[str] = None,
         password: Optional[str] = None
     ):
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_logger(self.__class__.__name__)
 
         self.name = name or os.getenv("POSTGRESQL_NAME")
         self.host = host or os.getenv("POSTGRESQL_HOST")
