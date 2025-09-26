@@ -9,4 +9,9 @@ from python_databases.elasticsearch_infrastructure.elasticsearch import (
 
 load_dotenv()
 
-__all__ = ['UrlProtocol', 'ElasticSearch', 'ElasticSearchOnPrem', 'ElasticSearchCloud']
+__all__ = [
+    'UrlProtocol',
+    'ElasticSearch',
+    'ElasticSearchOnPrem',
+    'ElasticSearchCloud'
+]
