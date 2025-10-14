@@ -1,7 +1,9 @@
 # test_postgresql.py
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from python_databases.postgresql_infrastructure import PostgreSQL
 
 
@@ -15,21 +17,21 @@ def mock_connection():
         yield mock_conn, mock_cursor
 
 
-def test_connection_created(mock_connection):
+def test_connection_created(mock_connection: MagicMock):  # pylint: disable=W0621
     conn, _ = mock_connection
     db = PostgreSQL(name="test_db", host="localhost", port="5432", username="user", password="pass")
     assert db.client == conn
     assert conn.cursor.call_count == 2
 
 
-def test_execute_query_success(mock_connection):
+def test_execute_query_success(mock_connection: MagicMock):  # pylint: disable=W0621
     _, cursor = mock_connection
     db = PostgreSQL(name="test_db", host="localhost", port="5432", username="user", password="pass")
     db.execute_query("SELECT 1", None)
     cursor.execute.assert_called_with("SELECT 1", None)
 
 
-def test_fetch_all_success(mock_connection):
+def test_fetch_all_success(mock_connection: MagicMock):  # pylint: disable=W0621
     _, cursor = mock_connection
     cursor.fetchall.return_value = [{"id": 1}]
     db = PostgreSQL(name="test_db", host="localhost", port="5432", username="user", password="pass")
@@ -38,9 +40,9 @@ def test_fetch_all_success(mock_connection):
     assert results == [{"id": 1}]
 
 
-def test_context_manager_closes_connection(mock_connection):
+def test_context_manager_closes_connection(mock_connection: MagicMock):  # pylint: disable=W0621
     conn, cursor = mock_connection
-    with PostgreSQL(name="test_db", host="localhost", port="5432", username="user", password="pass") as db:
+    with PostgreSQL(name="test_db", host="localhost", port="5432", username="user", password="pass") as _:
         pass
     cursor.close.assert_called_once()
     conn.close.assert_called_once()

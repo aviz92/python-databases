@@ -4,4 +4,4 @@ from python_databases.postgresql_infrastructure.postgresql import PostgreSQL
 
 load_dotenv()
 
-__all__ = ['PostgreSQL']
+__all__ = ["PostgreSQL"]
