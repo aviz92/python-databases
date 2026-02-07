@@ -1,3 +1,12 @@
+![PyPI version](https://img.shields.io/pypi/v/python-databases)
+![Python](https://img.shields.io/badge/python->=3.12-blue)
+![Development Status](https://img.shields.io/badge/status-stable-green)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
+![PyPI](https://img.shields.io/pypi/dm/python-databases)
+![License](https://img.shields.io/pypi/l/python-databases)
+
+---
+
 # Python Databases
 A flexible and extensible Python library that provides a unified interface for interacting with multiple types of databases.
 
