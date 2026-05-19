@@ -11,6 +11,8 @@ from custom_python_logger import get_logger
 from elasticsearch import Elasticsearch, helpers
 from retrying import retry
 
+from python_databases.elasticsearch_infrastructure.consts import ELK_LOGGER_NAME
+
 
 class UrlProtocol(Enum):
     HTTP = "http"
@@ -27,7 +29,7 @@ class ElasticSearch(ABC):
         username: str | None,
         password: str | None,
     ) -> None:
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(ELK_LOGGER_NAME)
         self._change_elasticsearch_logger()
 
         self.protocol = protocol
@@ -208,7 +210,7 @@ class ElasticSearchOnPrem(ElasticSearch):
             password=password,
         )
 
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(ELK_LOGGER_NAME)
 
         self.connect_to_elasticsearch()
 
@@ -250,7 +252,7 @@ class ElasticSearchCloud(ElasticSearch):
             password=password,
         )
 
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(ELK_LOGGER_NAME)
 
         self.connect_to_elasticsearch()
 

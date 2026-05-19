@@ -6,6 +6,8 @@ import psycopg2
 from custom_python_logger import get_logger
 from psycopg2 import extras
 
+from python_databases.postgresql_infrastructure.consts import POSTGRESQL_LOGGER_NAME
+
 
 class PostgreSQL:
     def __init__(
@@ -16,7 +18,7 @@ class PostgreSQL:
         username: str | None = None,
         password: str | None = None,
     ) -> None:
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = get_logger(POSTGRESQL_LOGGER_NAME)
 
         self.name = name or os.getenv("POSTGRESQL_NAME")
         self.host = host or os.getenv("POSTGRESQL_HOST")

@@ -7,7 +7,7 @@ name = "python-databases"
 version = "1.0.0"
 description = "A Python library for managing and interacting with multiple databases seamlessly."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Avi Zaguri" },]
 keywords = ["development", "databases", "ORM", "SQL", "NoSQL", "database management"]
@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "custom-python-logger>=2.0.10",
+    "custom-python-logger>=4.0.0",
     "elasticsearch<9",
     "pandas>=2.3.3",
     "pre-commit>=4.5.0",
