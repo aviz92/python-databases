@@ -55,13 +55,22 @@ class ElasticSearch(ABC):
         tracer = get_logger("elasticsearch")
         tracer.setLevel(debug_level)
 
-    def _set_list_of_docs_quick(self, list_of_docs: list[dict], request_timeout: int = 600) -> None:
+    def _set_list_of_docs_quick(
+        self,
+        list_of_docs: list[dict],
+        request_timeout: int = 600,
+        raise_on_error: bool = False,
+    ) -> None:
+        failed_response_list = []
         if failed_response := helpers.streaming_bulk(
-            self.elk_client, list_of_docs, raise_on_error=False, request_timeout=request_timeout, chunk_size=1000
+                self.elk_client, list_of_docs, raise_on_error=False, request_timeout=request_timeout, chunk_size=1000
         ):
             for item in failed_response:
                 if item[1]["index"]["status"] != 201 or item[1]["index"]["_shards"]["failed"] > 0:
                     self.logger.debug(f"Failed document: \n{item}")
+                    failed_response_list.append(item)
+        if raise_on_error and failed_response_list:
+            raise Exception(f"Failed to report {len(failed_response_list)} documents")
 
     def _set_list_of_docs_safe(self, list_of_docs: list[dict]) -> None:
         success_response, failed_response = helpers.bulk(self.elk_client, list_of_docs)
@@ -73,11 +82,21 @@ class ElasticSearch(ABC):
                 f"The documents that were not reported successfully: {failed_response}"
             )
 
-    def post_list_of_docs(self, list_of_docs: list[dict], request_timeout: int = 600, quick: bool = False) -> None:
+    def post_list_of_docs(
+        self,
+        list_of_docs: list[dict],
+        request_timeout: int = 600,
+        quick: bool = False,
+        raise_on_error: bool = False
+    ) -> None:
         self.logger.info("Start to report the documents to ELK")
 
         if quick:
-            self._set_list_of_docs_quick(list_of_docs=list_of_docs, request_timeout=request_timeout)
+            self._set_list_of_docs_quick(
+                list_of_docs=list_of_docs,
+                request_timeout=request_timeout,
+                raise_on_error=raise_on_error
+            )
         else:
             self._set_list_of_docs_safe(list_of_docs=list_of_docs)
         self.logger.info("Finish to report the documents to ELK")
@@ -135,16 +154,27 @@ class ElasticSearch(ABC):
         return list_of_docs
 
     def post_list_of_docs_as_bulk_chunk(
-        self, list_of_docs: list[dict], chunk_size: int = 1000, time_sleep: int = 60, quick: bool = False
+        self,
+        list_of_docs: list[dict],
+        chunk_size: int = 1000,
+        time_sleep: int = 60,
+        quick: bool = False,
+        raise_on_error: bool = False,
     ) -> None:
         for i in range(0, len(list_of_docs), chunk_size):
             self.logger.info(f"index: {i} - {i + chunk_size} / {len(list_of_docs)}")
-            chunk = list_of_docs[i : i + chunk_size]
-            self.post_list_of_docs(list_of_docs=chunk, quick=quick)
+            chunk = list_of_docs[i: i + chunk_size]
+            self.post_list_of_docs(list_of_docs=chunk, quick=quick, raise_on_error=raise_on_error)
         time.sleep(time_sleep)
 
     def fill_elk_index_as_bulk(  # post_list_of_docs_as_bulk
-        self, data: list[dict], doc_index_name: str, chunk_size: int = 1000, time_sleep: int = 1, quick: bool = True
+        self,
+        data: list[dict],
+        doc_index_name: str,
+        chunk_size: int = 1000,
+        time_sleep: int = 1,
+        quick: bool = True,
+        raise_on_error: bool = False,
     ) -> None:  # use as the main function to send data to the elastic search
         list_of_docs = self._prepare_documents_for_bulk(
             data=data,
@@ -156,6 +186,7 @@ class ElasticSearch(ABC):
             chunk_size=chunk_size,
             time_sleep=time_sleep,
             quick=quick,
+            raise_on_error=raise_on_error,
         )
 
     def check_if_index_exists(self, index: str) -> bool:
