@@ -70,7 +70,7 @@ class ElasticSearch(ABC):
                     self.logger.debug(f"Failed document: \n{item}")
                     failed_response_list.append(item)
         if raise_on_error and failed_response_list:
-            raise Exception(f"Failed to report {len(failed_response_list)} documents")
+            raise Exception(f"Failed to report {len(failed_response_list)} documents to Elasticsearch")
 
     def _set_list_of_docs_safe(self, list_of_docs: list[dict]) -> None:
         success_response, failed_response = helpers.bulk(self.elk_client, list_of_docs)
