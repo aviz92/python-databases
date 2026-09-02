@@ -63,7 +63,7 @@ class ElasticSearch(ABC):
     ) -> None:
         failed_response_list = []
         if failed_response := helpers.streaming_bulk(
-                self.elk_client, list_of_docs, raise_on_error=False, request_timeout=request_timeout, chunk_size=1000
+            self.elk_client, list_of_docs, raise_on_error=False, request_timeout=request_timeout, chunk_size=1000
         ):
             for item in failed_response:
                 if item[1]["index"]["status"] != 201 or item[1]["index"]["_shards"]["failed"] > 0:
@@ -83,19 +83,13 @@ class ElasticSearch(ABC):
             )
 
     def post_list_of_docs(
-        self,
-        list_of_docs: list[dict],
-        request_timeout: int = 600,
-        quick: bool = False,
-        raise_on_error: bool = False
+        self, list_of_docs: list[dict], request_timeout: int = 600, quick: bool = False, raise_on_error: bool = False
     ) -> None:
         self.logger.info("Start to report the documents to ELK")
 
         if quick:
             self._set_list_of_docs_quick(
-                list_of_docs=list_of_docs,
-                request_timeout=request_timeout,
-                raise_on_error=raise_on_error
+                list_of_docs=list_of_docs, request_timeout=request_timeout, raise_on_error=raise_on_error
             )
         else:
             self._set_list_of_docs_safe(list_of_docs=list_of_docs)
@@ -171,7 +165,7 @@ class ElasticSearch(ABC):
         for i in range(0, len(list_of_docs), chunk_size):
             if log_progress:
                 self.logger.info(f"index: {i} - {i + chunk_size} / {len(list_of_docs)}")
-            chunk = list_of_docs[i: i + chunk_size]
+            chunk = list_of_docs[i : i + chunk_size]
             self.post_list_of_docs(list_of_docs=chunk, quick=quick, raise_on_error=raise_on_error)
         time.sleep(time_sleep)
 
@@ -224,7 +218,11 @@ class ElasticSearch(ABC):
         except Exception as e:
             raise Exception(f"Failed to get documents from index '{index}': {str(e)}") from e
 
-    def convert_dataframes_to_list_of_docs(self, dataframe: pd.DataFrame, log_progress: bool = False,) -> list:
+    def convert_dataframes_to_list_of_docs(
+        self,
+        dataframe: pd.DataFrame,
+        log_progress: bool = False,
+    ) -> list:
         data = []
         dataframe_values = dataframe.values.tolist()
         for index, value in enumerate(dataframe_values):
