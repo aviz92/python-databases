@@ -347,7 +347,7 @@ wheels = [
 
 [[package]]
 name = "python-databases"
-version = "1.0.0"
+version = "1.2.2"
 source = { editable = "." }
 dependencies = [
     { name = "custom-python-logger" },
