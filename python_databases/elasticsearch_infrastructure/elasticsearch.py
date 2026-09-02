@@ -145,10 +145,16 @@ class ElasticSearch(ABC):
     def _fill_list_of_docs(index_name: str, doc: dict[str, Any]) -> dict:
         return {"_index": index_name, "_source": deepcopy(doc)}
 
-    def _prepare_documents_for_bulk(self, data: list[dict], doc_index_name: str) -> list[dict]:
+    def _prepare_documents_for_bulk(
+        self,
+        data: list[dict],
+        doc_index_name: str,
+        log_progress: bool = False,
+    ) -> list[dict]:
         list_of_docs = []
         for index, row in enumerate(data):
-            self.logger.debug(f"index: {index + 1}/{len(data)}")
+            if log_progress:
+                self.logger.debug(f"index: {index + 1}/{len(data)}")
             doc = self._build_document(row=row)
             list_of_docs.append(self._fill_list_of_docs(index_name=doc_index_name, doc=doc))
         return list_of_docs
@@ -160,9 +166,11 @@ class ElasticSearch(ABC):
         time_sleep: int = 60,
         quick: bool = False,
         raise_on_error: bool = False,
+        log_progress: bool = False,
     ) -> None:
         for i in range(0, len(list_of_docs), chunk_size):
-            self.logger.info(f"index: {i} - {i + chunk_size} / {len(list_of_docs)}")
+            if log_progress:
+                self.logger.info(f"index: {i} - {i + chunk_size} / {len(list_of_docs)}")
             chunk = list_of_docs[i: i + chunk_size]
             self.post_list_of_docs(list_of_docs=chunk, quick=quick, raise_on_error=raise_on_error)
         time.sleep(time_sleep)
@@ -175,10 +183,12 @@ class ElasticSearch(ABC):
         time_sleep: int = 1,
         quick: bool = True,
         raise_on_error: bool = False,
+        log_progress: bool = False,
     ) -> None:  # use as the main function to send data to the elastic search
         list_of_docs = self._prepare_documents_for_bulk(
             data=data,
             doc_index_name=doc_index_name,
+            log_progress=log_progress,
         )
 
         self.post_list_of_docs_as_bulk_chunk(
@@ -187,6 +197,7 @@ class ElasticSearch(ABC):
             time_sleep=time_sleep,
             quick=quick,
             raise_on_error=raise_on_error,
+            log_progress=log_progress,
         )
 
     def check_if_index_exists(self, index: str) -> bool:
@@ -213,11 +224,12 @@ class ElasticSearch(ABC):
         except Exception as e:
             raise Exception(f"Failed to get documents from index '{index}': {str(e)}") from e
 
-    def convert_dataframes_to_list_of_docs(self, dataframe: pd.DataFrame) -> list:
+    def convert_dataframes_to_list_of_docs(self, dataframe: pd.DataFrame, log_progress: bool = False,) -> list:
         data = []
         dataframe_values = dataframe.values.tolist()
         for index, value in enumerate(dataframe_values):
-            self.logger.debug(f"index: {index}/{len(dataframe_values)}")
+            if log_progress:
+                self.logger.debug(f"index: {index}/{len(dataframe_values)}")
             data.append(value)
         return data
 
