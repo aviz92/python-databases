@@ -158,6 +158,30 @@ def test_bulk_actions_do_not_share_mutable_source_state(
 
 
 # --------------------------------------------------------------------------- #
+# log_progress (the HEAD commit under test)
+# --------------------------------------------------------------------------- #
+@patch(f"{MODULE}.helpers")
+def test_log_progress_false_emits_no_progress_logging(
+    mock_helpers: MagicMock, es: _FakeElasticSearch  # pylint: disable=redefined-outer-name
+) -> None:
+    mock_helpers.streaming_bulk.side_effect = lambda *a, **kw: iter([_ok_item()])
+    es.fill_elk_index_as_bulk(data=[{"n": 1}, {"n": 2}], doc_index_name="idx", chunk_size=1)
+    es.logger.debug.assert_not_called()
+
+
+@patch(f"{MODULE}.helpers")
+def test_log_progress_true_logs_each_row_at_debug_and_each_chunk_at_info(
+    mock_helpers: MagicMock, es: _FakeElasticSearch  # pylint: disable=redefined-outer-name
+) -> None:
+    mock_helpers.streaming_bulk.side_effect = lambda *a, **kw: iter([_ok_item()])
+    es.fill_elk_index_as_bulk(data=[{"n": i} for i in range(4)], doc_index_name="idx", chunk_size=2, log_progress=True)
+    # 4 rows -> 4 per-row debug lines (from _prepare_documents_for_bulk).
+    assert es.logger.debug.call_count == 4, f"expected one debug per row, got {es.logger.debug.call_count}"
+    # 2 chunks -> at least 2 per-chunk info lines (from post_list_of_docs_as_bulk_chunk).
+    assert es.logger.info.call_count >= 2, f"chunk progress not logged at info: {es.logger.info.call_count}"
+
+
+# --------------------------------------------------------------------------- #
 # _add_list_values_as_str behaviour boundaries (pinned via public surface)
 # --------------------------------------------------------------------------- #
 @patch(f"{MODULE}.helpers")
@@ -165,10 +189,10 @@ def test_bulk_actions_do_not_share_mutable_source_state(
     "value,expect_str_key",
     [
         (["a", "b"], True),
-        ([], True),          # empty list: all() is vacuously true
-        ([1, 2], False),     # non-str list -> no string variant
-        (["a", 1], False),   # mixed list -> no string variant
-        ("plain", False),    # scalar -> no string variant
+        ([], True),  # empty list: all() is vacuously true
+        ([1, 2], False),  # non-str list -> no string variant
+        (["a", 1], False),  # mixed list -> no string variant
+        ("plain", False),  # scalar -> no string variant
     ],
 )
 def test_string_variant_only_for_all_string_lists(
@@ -193,6 +217,21 @@ def test_quick_all_success_never_raises_even_with_raise_on_error(
 ) -> None:
     mock_helpers.streaming_bulk.return_value = iter([_ok_item(), _ok_item()])
     es.post_list_of_docs(list_of_docs=[{}, {}], quick=True, raise_on_error=True)
+
+
+@patch(f"{MODULE}.helpers")
+def test_quick_drives_streaming_bulk_in_result_inspection_mode(
+    mock_helpers: MagicMock, es: _FakeElasticSearch  # pylint: disable=redefined-outer-name
+) -> None:
+    # These kwargs are load-bearing: raise_on_error=False is what keeps the
+    # failure-inspection loop reachable instead of letting helpers raise.
+    mock_helpers.streaming_bulk.return_value = iter([_ok_item()])
+    es.post_list_of_docs(list_of_docs=[{}], quick=True, request_timeout=42)
+
+    kwargs = mock_helpers.streaming_bulk.call_args.kwargs
+    assert kwargs["raise_on_error"] is False, "must inspect results, not let helpers raise"
+    assert kwargs["request_timeout"] == 42, f"request_timeout not forwarded: {kwargs.get('request_timeout')}"
+    assert kwargs["chunk_size"] == 1000, f"Got {kwargs.get('chunk_size')}"
 
 
 @patch(f"{MODULE}.helpers")
@@ -240,6 +279,7 @@ def test_safe_logs_success_and_no_error_when_all_reported(
 ) -> None:
     mock_helpers.bulk.return_value = (2, [])
     es.post_list_of_docs(list_of_docs=[{}, {}], quick=False)
+    es.logger.info.assert_called()
     es.logger.error.assert_not_called()
 
 
@@ -302,6 +342,20 @@ def test_chunking_forwards_quick_and_raise_on_error(
 
 @pytest.mark.xfail(
     strict=True,
+    reason="BUG: time.sleep is dedented outside the chunk loop -> an empty input list still "
+    "sleeps for time_sleep (60s by default) despite posting nothing.",
+)
+def test_chunking_empty_input_posts_nothing_and_does_not_sleep(
+    es: _FakeElasticSearch, no_sleep: MagicMock  # pylint: disable=redefined-outer-name
+) -> None:
+    with patch.object(es, "post_list_of_docs") as mock_post:
+        es.post_list_of_docs_as_bulk_chunk(list_of_docs=[], chunk_size=2)
+    mock_post.assert_not_called()
+    no_sleep.assert_not_called()
+
+
+@pytest.mark.xfail(
+    strict=True,
     reason="BUG: time.sleep is dedented outside the chunk loop -> it fires once after all "
     "chunks instead of pausing between them, so time_sleep cannot rate-limit chunked writes.",
 )
@@ -310,9 +364,10 @@ def test_chunking_sleeps_between_chunks(
 ) -> None:
     with patch.object(es, "post_list_of_docs"):
         es.post_list_of_docs_as_bulk_chunk(list_of_docs=[{}] * 6, chunk_size=2, time_sleep=30)
-    assert no_sleep.call_args_list == [call(30), call(30)], (
-        f"expected a sleep after each non-final chunk, got {no_sleep.call_args_list}"
-    )
+    assert no_sleep.call_args_list == [
+        call(30),
+        call(30),
+    ], f"expected a sleep after each non-final chunk, got {no_sleep.call_args_list}"
 
 
 # --------------------------------------------------------------------------- #
@@ -356,7 +411,9 @@ def test_get_documents_returns_sources_in_order(es: _FakeElasticSearch) -> None:
     es.elk_client.search.assert_called_once_with(index="idx", body=query)
 
 
-def test_get_documents_wraps_and_chains_client_error(es: _FakeElasticSearch) -> None:  # pylint: disable=redefined-outer-name
+def test_get_documents_wraps_and_chains_client_error(  # pylint: disable=redefined-outer-name
+    es: _FakeElasticSearch,
+) -> None:
     original = ValueError("kaboom")
     es.elk_client.search.side_effect = original
     with pytest.raises(Exception, match=r"Failed to get documents from index 'idx'") as exc_info:
@@ -367,7 +424,9 @@ def test_get_documents_wraps_and_chains_client_error(es: _FakeElasticSearch) -> 
 # --------------------------------------------------------------------------- #
 # convert_dataframes_to_list_of_docs
 # --------------------------------------------------------------------------- #
-def test_convert_dataframes_returns_one_entry_per_row(es: _FakeElasticSearch) -> None:  # pylint: disable=redefined-outer-name
+def test_convert_dataframes_returns_one_entry_per_row(  # pylint: disable=redefined-outer-name
+    es: _FakeElasticSearch,
+) -> None:
     df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
     result = es.convert_dataframes_to_list_of_docs(dataframe=df)
     assert len(result) == 2, f"expected one entry per row, got {result}"
@@ -379,7 +438,9 @@ def test_convert_dataframes_returns_one_entry_per_row(es: _FakeElasticSearch) ->
     "dropping column names. Its output is not consumable by fill_elk_index_as_bulk / _build_document, "
     "which iterate row.items().",
 )
-def test_convert_dataframes_output_is_keyed_by_column(es: _FakeElasticSearch) -> None:  # pylint: disable=redefined-outer-name
+def test_convert_dataframes_output_is_keyed_by_column(  # pylint: disable=redefined-outer-name
+    es: _FakeElasticSearch,
+) -> None:
     df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
     result = es.convert_dataframes_to_list_of_docs(dataframe=df)
     assert result == [{"a": 1, "b": 3}, {"a": 2, "b": 4}], f"column names lost: {result}"
