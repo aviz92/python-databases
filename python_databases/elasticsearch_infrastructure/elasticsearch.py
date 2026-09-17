@@ -107,7 +107,7 @@ class ElasticSearch(ABC):
         doc.update(
             {
                 "doc_id": timestamp.strftime("%Y%m%dT%H%M%S%f"),
-                "timestamp": timestamp,
+                "upload_timestamp": timestamp,
                 "date_and_time_str": date_and_time_str,
                 "date_str": date,
                 "time_str": time_part,
