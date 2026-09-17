@@ -138,7 +138,7 @@ def test_doc_id_is_derived_from_the_timestamp(
     es.fill_elk_index_as_bulk(data=[{"n": 1}], doc_index_name="idx", chunk_size=100)
 
     src = _sent_docs(mock_helpers)[0]["_source"]
-    ts = src["timestamp"]
+    ts = src["upload_timestamp"]
     assert isinstance(ts, datetime), f"timestamp must be a datetime, got {type(ts)}"
     assert src["doc_id"] == ts.strftime("%Y%m%dT%H%M%S%f"), "doc_id/timestamp derivation broken"
     assert src["date_and_time_str"].startswith(src["date_str"]), "date_str is not the date half"
