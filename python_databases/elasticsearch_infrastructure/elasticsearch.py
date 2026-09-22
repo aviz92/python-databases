@@ -38,10 +38,10 @@ class ElasticSearch(ABC):
         self.password = password
 
         self.elasticsearch_port = elasticsearch_port
-        if not self.elasticsearch_port:
-            self.elasticsearch_url = f"{self.protocol.value}://{self.elk_hostname}"
-        else:
+        if self.elasticsearch_port:
             self.elasticsearch_url = f"{self.protocol.value}://{self.elk_hostname}:{self.elasticsearch_port}"
+        else:
+            self.elasticsearch_url = f"{self.protocol.value}://{self.elk_hostname}"
         self.kibana_port = kibana_port
 
         self.elk_client = None
@@ -89,7 +89,9 @@ class ElasticSearch(ABC):
 
         if quick:
             self._set_list_of_docs_quick(
-                list_of_docs=list_of_docs, request_timeout=request_timeout, raise_on_error=raise_on_error
+                list_of_docs=list_of_docs,
+                request_timeout=request_timeout,
+                raise_on_error=raise_on_error,
             )
         else:
             self._set_list_of_docs_safe(list_of_docs=list_of_docs)
@@ -97,23 +99,15 @@ class ElasticSearch(ABC):
 
     @staticmethod
     def _get_doc_with_basic_info() -> dict:
-        doc = {}
-
         timestamp = datetime.now(tz=UTC)
         date_and_time_str = timestamp.isoformat()
-        date = date_and_time_str.split("T")[0]
-        time_part = date_and_time_str.split("T")[1].split("+")[0]
-
-        doc.update(
-            {
-                "doc_id": timestamp.strftime("%Y%m%dT%H%M%S%f"),
-                "upload_timestamp": timestamp,
-                "date_and_time_str": date_and_time_str,
-                "date_str": date,
-                "time_str": time_part,
-            }
-        )
-        return doc
+        return {
+            "doc_id": timestamp.strftime("%Y%m%dT%H%M%S%f"),
+            "upload_timestamp": timestamp,
+            "date_and_time_str": date_and_time_str,
+            "date_str": date_and_time_str.split("T")[0],
+            "time_str": date_and_time_str.split("T")[1].split("+")[0],
+        }
 
     @staticmethod
     def _add_list_values_as_str(doc: dict, column: str, value: Any) -> None:
