@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-import pandas as pd
 from custom_python_logger import get_logger
 from elasticsearch import Elasticsearch, helpers
 from retrying import retry
@@ -211,19 +210,6 @@ class ElasticSearch(ABC):
             return [doc["_source"] for doc in res]
         except Exception as e:
             raise Exception(f"Failed to get documents from index '{index}': {str(e)}") from e
-
-    def convert_dataframes_to_list_of_docs(
-        self,
-        dataframe: pd.DataFrame,
-        log_progress: bool = False,
-    ) -> list:
-        data = []
-        dataframe_values = dataframe.values.tolist()
-        for index, value in enumerate(dataframe_values):
-            if log_progress:
-                self.logger.debug(f"index: {index}/{len(dataframe_values)}")
-            data.append(value)
-        return data
 
 
 class ElasticSearchOnPrem(ElasticSearch):
