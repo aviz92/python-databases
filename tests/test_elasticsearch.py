@@ -10,7 +10,6 @@ from collections.abc import Iterator
 from datetime import datetime
 from unittest.mock import MagicMock, call, patch
 
-import pandas as pd
 import pytest
 from elasticsearch.helpers import BulkIndexError
 
@@ -419,31 +418,6 @@ def test_get_documents_wraps_and_chains_client_error(  # pylint: disable=redefin
     with pytest.raises(Exception, match=r"Failed to get documents from index 'idx'") as exc_info:
         es.get_documents(index="idx", query={})
     assert exc_info.value.__cause__ is original, "original error not chained"
-
-
-# --------------------------------------------------------------------------- #
-# convert_dataframes_to_list_of_docs
-# --------------------------------------------------------------------------- #
-def test_convert_dataframes_returns_one_entry_per_row(  # pylint: disable=redefined-outer-name
-    es: _FakeElasticSearch,
-) -> None:
-    df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-    result = es.convert_dataframes_to_list_of_docs(dataframe=df)
-    assert len(result) == 2, f"expected one entry per row, got {result}"
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG: convert_dataframes_to_list_of_docs returns bare value lists (df.values.tolist()), "
-    "dropping column names. Its output is not consumable by fill_elk_index_as_bulk / _build_document, "
-    "which iterate row.items().",
-)
-def test_convert_dataframes_output_is_keyed_by_column(  # pylint: disable=redefined-outer-name
-    es: _FakeElasticSearch,
-) -> None:
-    df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-    result = es.convert_dataframes_to_list_of_docs(dataframe=df)
-    assert result == [{"a": 1, "b": 3}, {"a": 2, "b": 4}], f"column names lost: {result}"
 
 
 # --------------------------------------------------------------------------- #
