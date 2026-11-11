@@ -67,7 +67,7 @@ class ElasticSearch(ABC):
         ):
             for item in failed_response:
                 if item[1]["index"]["status"] != 201 or item[1]["index"]["_shards"]["failed"] > 0:
-                    self.logger.debug(f"Failed document: \n{item}")
+                    self.logger.error(f"Failed document: \n{item}")
                     failed_response_list.append(item)
         if raise_on_error and failed_response_list:
             raise Exception(f"Failed to report {len(failed_response_list)} documents to Elasticsearch")

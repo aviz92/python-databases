@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-databases"
-version = "2.0.0"
+version = "2.1.0"
 description = "A Python library for managing and interacting with multiple databases seamlessly."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -21,20 +21,18 @@ classifiers = [
 ]
 
 dependencies = [
-    "custom-python-logger>=4.0.2",
-    "elasticsearch<9",
-    "pandas>=2.3.3",
-    "psycopg2-binary>=2.9.11",
-    "python-dotenv>=1.2.1",
+    "custom-python-logger>=4.2.0",
+    "elasticsearch>=8.19.3,<9",
+    "pandas>=3.1.1",
+    "psycopg2-binary>=2.9.13",
+    "python-dotenv>=1.2.4",
     "retrying>=1.4.2",
 ]
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.6.2",
-    "pytest>=9.0.2",
-    "setuptools>=84.0.0",
-    "wheel>=0.48.0",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
 ]
 
 [project.urls]
